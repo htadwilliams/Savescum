@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Savescum": {
+      "commandName": "Project",
+      "commandLineArgs": "load"
+    }
+  }
+}
