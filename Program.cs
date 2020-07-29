@@ -50,7 +50,7 @@ namespace Savescum
         {
             Console.WriteLine("LOADING...");
 
-            // Find latest save - no use going past that if it isn't found
+            // Find latest save - notify and bail out if it isn't found
             string lastSavePath = FindLastSavePath(PATH_BACKUPS, PREFIX_BACKUP);
             if (lastSavePath.Length == 0)
             {
@@ -88,6 +88,8 @@ namespace Savescum
             deleteDir.Delete(true);
             PrintCopyInfo(lastSavePath, PATH_SAVES);
             DirectoryCopy(lastSavePath, PATH_SAVES, true);
+
+            Console.WriteLine("LOAD FINISHED from " + lastSavePath);
         }
 
         private static string FindLastSavePath(string pathSaves, string prefixSave)
