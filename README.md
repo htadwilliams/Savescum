@@ -23,8 +23,8 @@ Savescum [load | save>]
 
 Add Command-line options to:
 
-[ ] Set source file / directory for saves.
-[ ] Load: Add command-line option to specify which save by ordinal.
-[ ] Maintenance. Option to clean all but N saved entries, with flag for recycle vs. hard delete.
-[ ] GUI, with presets for various games and installation platforms?
-[ ] Robot to mix drinks and rub feet while games are loading. Stretch goal.
+ - [ ] Set source file / directory for saves.
+ - [ ] Load: Add command-line option to specify which save by ordinal.
+ - [ ] Maintenance. Option to clean all but N saved entries, with flag for recycle vs. hard delete.
+ - [ ] GUI, with presets for various games and installation platforms?
+ - [ ] Robot to mix drinks and rub feet while games are loading. Stretch goal.
