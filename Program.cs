@@ -46,27 +46,46 @@ namespace Savescum
             }
         }
 
+        private static void DoSave()
+        {
+            Console.WriteLine("Savescum SAVING ...");
+            string savePath = GenerateSavePath(PATH_BACKUPS, PREFIX_BACKUP);
+
+            if (savePath.Length == 0)
+            {
+                Console.WriteLine("Error: Couldn't generate save path");
+                return;
+            }
+
+
+            PrintCopyInfo(PATH_SAVES, savePath);
+            DirectoryCopy(PATH_SAVES, savePath, true);
+            Console.WriteLine();
+            Console.WriteLine("SAVE FINISHED to " + savePath);
+            Console.WriteLine();
+        }
+
         private static void DoLoad()
         {
-            Console.WriteLine("LOADING...");
+            Console.WriteLine("Savescum LOADING...");
 
             // Find latest save - notify and bail out if it isn't found
             string lastSavePath = FindLastSavePath(PATH_BACKUPS, PREFIX_BACKUP);
             if (lastSavePath.Length == 0)
             {
                 Console.WriteLine();
-                Console.WriteLine("Error: No saves found at ");
-                Console.WriteLine("    path: " + PATH_BACKUPS);
-                Console.WriteLine("  prefix: " + PREFIX_BACKUP);
+                Console.WriteLine("  Error: No saves found at ");
+                Console.WriteLine("      path: " + PATH_BACKUPS);
+                Console.WriteLine("    prefix: " + PREFIX_BACKUP);
                 Console.WriteLine();
-                Console.WriteLine("NO FILES CHANGED");
+                Console.WriteLine("  NO FILES CHANGED");
                 Console.WriteLine();
 
                 return;
             }
 
-            Console.WriteLine("Found latest backup at");
-            Console.WriteLine("    path: " + lastSavePath);
+            Console.WriteLine("  Found latest backup at");
+            Console.WriteLine("      path: " + lastSavePath);
 
             // Backup existing save directory before writing over it
             string protectDirPath = GenerateProtectPath(PATH_PROTECT, PREFIX_PROTECT);
@@ -77,19 +96,23 @@ namespace Savescum
                 return;
             }
 
-            Console.WriteLine("Backing up directory before writing over it");
+            Console.WriteLine("  Backing up directory before writing over it");
             PrintCopyInfo(PATH_SAVES, protectDirPath);
             DirectoryCopy(PATH_SAVES, protectDirPath, true);
 
-            Console.WriteLine("Copying from backup");
-
             // delete and write over
+            Console.WriteLine("  Deleting directory: " + PATH_SAVES);
             DirectoryInfo deleteDir = new DirectoryInfo(PATH_SAVES);
             deleteDir.Delete(true);
+
+            Console.WriteLine("  Restoring deleted directory from backup save");
+
             PrintCopyInfo(lastSavePath, PATH_SAVES);
             DirectoryCopy(lastSavePath, PATH_SAVES, true);
 
+            Console.WriteLine();
             Console.WriteLine("LOAD FINISHED from " + lastSavePath);
+            Console.WriteLine();
         }
 
         private static string FindLastSavePath(string pathSaves, string prefixSave)
@@ -120,29 +143,12 @@ namespace Savescum
 
         }
 
-        private static void DoSave()
-        {
-            Console.WriteLine("SAVING...");
-            string savePath = GenerateSavePath(PATH_BACKUPS, PREFIX_BACKUP);
-
-            if (savePath.Length != 0)
-            {
-                PrintCopyInfo(PATH_SAVES, savePath);
-                DirectoryCopy(PATH_SAVES, savePath, true);
-                Console.WriteLine("SAVE FINISHED to " + savePath);
-            }
-
-            else
-            {
-                Console.WriteLine("Error: Couldn't generate save path");
-            }
-        }
-
         private static void PrintCopyInfo(string pathSource, string pathDest)
         {
             Console.WriteLine(              "    Copying directory");
             Console.WriteLine(String.Format("      [{0}] ->", pathSource));
             Console.WriteLine(String.Format("      [{0}] ...", pathDest));
+            Console.WriteLine(              "    Copy finished");
         }
 
         private static string GenerateSavePath(string path, string prefix)
