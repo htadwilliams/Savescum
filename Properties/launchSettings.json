@@ -2,7 +2,7 @@
   "profiles": {
     "Savescum": {
       "commandName": "Project",
-      "commandLineArgs": "load"
+      "commandLineArgs": "operation=save gamePath=G:\\games\\steam\\steamapps\\common\\ARK\\ShooterGame\\Saved\\SavedArksLocal backupPath=G:\\games\\steam\\steamapps\\common\\ARK\\ShooterGame\\Saved\\BackupArksLocal backupPrefix=BackupArk protectPrefix=OverwrittenArk"
     }
   }
 }
