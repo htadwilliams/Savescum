@@ -10,6 +10,8 @@ namespace Savescum
         private const string ARGUMENT_SEPARATOR = "=";
         private const string OPERATION_SAVE = "save";
         private const string OPERATION_LOAD = "load";
+        private const string OPERATION_CLEAN = "clean";
+        private const string OPERATION_CLEAR = "clear";
 
         private const string PREFIX_BACKUP  = "SavescumBackup";
         private const string PREFIX_PROTECT = "SavescumOverwriteProtection";
@@ -18,11 +20,6 @@ namespace Savescum
         private const string FORMAT_PROTECT = "{0}\\{1}{2:yyyy-MM-dd_hh-mm-ss}";
 
         private const string ARGUMENT_OPERATION = "operation";
-
-        private const string ARGUMENT_OPERATION_CLEAN = "clean";
-        private const string ARGUMENT_OPERATION_CLEAR = "clear";
-        private const string ARGUMENT_OPERATION_SAVE = "save";
-        private const string ARGUMENT_OPERATION_LOAD = "load";
 
         private const string ARGUMENT_PATH_GAME = "gamePath";
         private const string ARGUMENT_PATH_BACKUP = "backupPath";
