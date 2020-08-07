@@ -1,34 +1,93 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using System.IO;
 
 namespace Savescum
 {
     class Program
     {
+        private const string ARGUMENT_SEPARATOR = "=";
         private const string OPERATION_SAVE = "save";
         private const string OPERATION_LOAD = "load";
-        
-        private const string PATH_SAVES     = @"G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\SavedArksLocal";
-        private const string PATH_BACKUPS   = @"G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\BackupArksLocal";
-        private const string PATH_PROTECT   = @"G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\BackupArksLocal";
-        
-        private const string PREFIX_BACKUP  = "BackupArk";
-        private const string PREFIX_PROTECT = "OverwrittenArk";
+
+        private const string PREFIX_BACKUP  = "SavescumBackup";
+        private const string PREFIX_PROTECT = "SavescumOverwriteProtection";
 
         private const string FORMAT_SAVE    = "{0}\\{1}{2:D3}";
         private const string FORMAT_PROTECT = "{0}\\{1}{2:yyyy-MM-dd_hh-mm-ss}";
 
+        private const string ARGUMENT_OPERATION = "operation";
+
+        private const string ARGUMENT_OPERATION_CLEAN = "clean";
+        private const string ARGUMENT_OPERATION_CLEAR = "clear";
+        private const string ARGUMENT_OPERATION_SAVE = "save";
+        private const string ARGUMENT_OPERATION_LOAD = "load";
+
+        private const string ARGUMENT_PATH_GAME = "gamePath";
+        private const string ARGUMENT_PATH_BACKUP = "backupPath";
+        private const string ARGUMENT_PATH_PROTECT = "protectPath";
+        private const string ARGUMENT_COUNT = "count";
+
+        private const string ARGUMENT_PREFIX_BACKUP = "backupPrefix";
+        private const string ARGUMENT_PREFIX_PROTECT = "protectPrefix";
+
         private static readonly int MAX_NAME_COUNT = Int32.MaxValue;
+        private static Dictionary<string, string> s_argumentProperties;
+
+        // These are required so no default set
+        private static string s_pathGame;
+        private static string s_pathBackup;
+        private static string s_pathProtect;
+
+        // Set argument defaults
+        private static int s_argumentCount = 1;
+        private static string s_prefixBackup = PREFIX_BACKUP;
+        private static string s_prefixProtect = PREFIX_PROTECT;
+
+        // Command-lines for testing
+        //
+        // operation=save 
+        // operation=save gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup
+        // gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup
+        // operation=save gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup blah=blah=blah
 
         static void Main(string[] args)
         {
+            PrintStartBanner();
+
             if (args.Length == 0)
             {
+                PrintErrorNoArguments();
                 PrintUsage();
-                return;
+                Environment.Exit(1);
             }
 
-            string operation = args[0].ToLower();
+            try
+            {
+                s_argumentProperties = GetArgumentProperties(args);
+            }
+
+            catch (ArgumentException e)
+            {
+                PrintArgumentException(e);
+                Environment.Exit(1);
+            }
+
+            s_prefixBackup = GetPropertyValue(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
+            s_prefixProtect = GetPropertyValue(ARGUMENT_PREFIX_PROTECT, PREFIX_PROTECT);
+
+            s_pathGame = GetPropertyValue(ARGUMENT_PATH_GAME, null);
+            s_pathBackup = GetPropertyValue(ARGUMENT_PATH_BACKUP, null);
+            s_pathProtect = GetPropertyValue(ARGUMENT_PATH_PROTECT, s_pathBackup);
+
+            if (!s_argumentProperties.TryGetValue(ARGUMENT_OPERATION, out string operation))
+            {
+                PrintArgumentRequired(ARGUMENT_OPERATION);
+                PrintUsage();
+                Environment.Exit(1);
+            }
+
             switch (operation)
             {
                 case OPERATION_SAVE:
@@ -42,14 +101,53 @@ namespace Savescum
                 default:
                     Console.WriteLine("Unknown operation: " + args[0]);
                     PrintUsage();
+                    Environment.Exit(1);
                     break;
             }
+
+            Environment.Exit(0);
+        }
+
+        private static string GetPropertyValue(string key, string defaultValue)
+        {
+            if (s_argumentProperties.TryGetValue(key, out string value))
+            {
+                return value;
+            }
+
+            // argument not found - null default indicates required value
+            if (null == defaultValue)
+            {
+                PrintArgumentRequired(key);
+                Environment.Exit(1);
+            }
+
+            return defaultValue;
+        }
+
+        private static Dictionary<string, string> GetArgumentProperties(string[] args)
+        {
+            Dictionary<string, string> argumentProperties = new Dictionary<string, string>(args.Length);
+
+            foreach (string argument in args)
+            {
+                String[] argumentParts = argument.Split(ARGUMENT_SEPARATOR);
+                if (argumentParts.Length != 2)
+                {
+                    throw new ArgumentException("Improperly formed argument: [" + argument + "]");
+                }
+
+                argumentProperties.Add(argumentParts[0], argumentParts[1]);
+            }
+
+            return argumentProperties;
         }
 
         private static void DoSave()
         {
             Console.WriteLine("Savescum SAVING ...");
-            string savePath = GenerateSavePath(PATH_BACKUPS, PREFIX_BACKUP);
+
+            string savePath = GenerateSavePath(s_pathBackup, s_prefixBackup);
 
             if (savePath.Length == 0)
             {
@@ -57,9 +155,9 @@ namespace Savescum
                 return;
             }
 
+            PrintCopyInfo(s_pathGame, savePath);
+            DirectoryCopy(s_pathGame, savePath, true);
 
-            PrintCopyInfo(PATH_SAVES, savePath);
-            DirectoryCopy(PATH_SAVES, savePath, true);
             Console.WriteLine();
             Console.WriteLine("SAVE FINISHED to " + savePath);
             Console.WriteLine();
@@ -70,16 +168,16 @@ namespace Savescum
             Console.WriteLine("Savescum LOADING...");
 
             // Find latest save - notify and bail out if it isn't found
-            string lastSavePath = FindLastSavePath(PATH_BACKUPS, PREFIX_BACKUP);
+            string lastSavePath = FindLastSavePath(s_pathBackup, s_prefixBackup);
             if (lastSavePath.Length == 0)
             {
-                Console.WriteLine();
-                Console.WriteLine("  Error: No saves found at ");
-                Console.WriteLine("      path: " + PATH_BACKUPS);
-                Console.WriteLine("    prefix: " + PREFIX_BACKUP);
-                Console.WriteLine();
-                Console.WriteLine("  NO FILES CHANGED");
-                Console.WriteLine();
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  Error: No saves found at ");
+                Console.Error.WriteLine("      path: " + s_pathBackup);
+                Console.Error.WriteLine("    prefix: " + s_prefixBackup);
+                Console.Error.WriteLine();
+                Console.Error.WriteLine("  NO FILES CHANGED");
+                Console.Error.WriteLine();
 
                 return;
             }
@@ -88,27 +186,27 @@ namespace Savescum
             Console.WriteLine("      path: " + lastSavePath);
 
             // Backup existing save directory before writing over it
-            string protectDirPath = GenerateProtectPath(PATH_PROTECT, PREFIX_PROTECT);
+            string protectDirPath = GenerateProtectPath(s_pathProtect, s_prefixProtect);
 
             if (protectDirPath.Length == 0)
             {
-                PrintProtectError(PATH_PROTECT, PREFIX_PROTECT);
+                PrintProtectError(s_pathProtect, s_prefixProtect);
                 return;
             }
 
             Console.WriteLine("  Backing up directory before writing over it");
-            PrintCopyInfo(PATH_SAVES, protectDirPath);
-            DirectoryCopy(PATH_SAVES, protectDirPath, true);
+            PrintCopyInfo(s_pathGame, protectDirPath);
+            DirectoryCopy(s_pathGame, protectDirPath, true);
 
             // delete and write over
-            Console.WriteLine("  Deleting directory: " + PATH_SAVES);
-            DirectoryInfo deleteDir = new DirectoryInfo(PATH_SAVES);
+            Console.WriteLine("  Deleting directory: " + s_pathGame);
+            DirectoryInfo deleteDir = new DirectoryInfo(s_pathGame);
             deleteDir.Delete(true);
 
             Console.WriteLine("  Restoring deleted directory from backup save");
 
-            PrintCopyInfo(lastSavePath, PATH_SAVES);
-            DirectoryCopy(lastSavePath, PATH_SAVES, true);
+            PrintCopyInfo(lastSavePath, s_pathGame);
+            DirectoryCopy(lastSavePath, s_pathGame, true);
 
             Console.WriteLine();
             Console.WriteLine("LOAD FINISHED from " + lastSavePath);
@@ -133,22 +231,6 @@ namespace Savescum
             }
 
             return lastFoundPath;
-        }
-
-        private static void PrintProtectError(string path, string prefix)
-        {
-            Console.WriteLine("Error: Couldn't backup directory before writing over it");
-            Console.WriteLine("    Path  = " + path);
-            Console.WriteLine("   Prefix = " + prefix);
-
-        }
-
-        private static void PrintCopyInfo(string pathSource, string pathDest)
-        {
-            Console.WriteLine(              "    Copying directory");
-            Console.WriteLine(String.Format("      [{0}] ->", pathSource));
-            Console.WriteLine(String.Format("      [{0}] ...", pathDest));
-            Console.WriteLine(              "    Copy finished");
         }
 
         private static string GenerateSavePath(string path, string prefix)
@@ -181,13 +263,6 @@ namespace Savescum
             }
 
             return "";
-        }
-
-        static void PrintUsage()
-        {
-            Console.WriteLine("");
-            Console.WriteLine("Usage: Savescum <operation>");
-            Console.WriteLine("");
         }
 
         private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
@@ -226,6 +301,55 @@ namespace Savescum
                     DirectoryCopy(subdir.FullName, temppath, copySubDirs);
                 }
             }
+        }
+
+        private static void PrintStartBanner()
+        {
+            Console.WriteLine();
+            Console.WriteLine("Savescum backup utility");
+            Console.WriteLine();
+        }
+
+        private static void PrintProtectError(string path, string prefix)
+        {
+            Console.Error.WriteLine("Error: Couldn't backup directory before writing over it");
+            Console.Error.WriteLine("    Path  = " + path);
+            Console.Error.WriteLine("   Prefix = " + prefix);
+            Console.Error.WriteLine();
+        }
+
+        private static void PrintCopyInfo(string pathSource, string pathDest)
+        {
+            Console.WriteLine("    Copying directory");
+            Console.WriteLine(String.Format("      [{0}] ->", pathSource));
+            Console.WriteLine(String.Format("      [{0}] ...", pathDest));
+            Console.WriteLine("    Copy finished");
+        }
+
+        private static void PrintArgumentRequired(string argument)
+        {
+            Console.Error.WriteLine("Error:");
+            Console.Error.WriteLine("  Required argument not found: " + argument);
+            Console.Error.WriteLine();
+        }
+
+        static void PrintUsage()
+        {
+            Console.WriteLine("Usage: Savescum operation=[save|load|clean|clear] [argument=value ...]");
+            Console.WriteLine();
+        }
+
+        private static void PrintArgumentException(ArgumentException e)
+        {
+            Console.Error.WriteLine("Error processing arguments: ");
+            Console.Error.WriteLine("  " + e.Message);
+            Console.Error.WriteLine();
+        }
+
+        private static void PrintErrorNoArguments()
+        {
+            Console.Error.WriteLine("Error: No command-line arguments given");
+            Console.Error.WriteLine();
         }
     }
 }
