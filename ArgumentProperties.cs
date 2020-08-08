@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Savescum
 {
-    class ArgumentProperties
+    public class ArgumentProperties
     {
         protected Dictionary<string, string> argumentMap;
 
@@ -14,7 +14,10 @@ namespace Savescum
             foreach (string argument in args)
             {
                 String[] argumentParts = argument.Split(separator);
-                if (argumentParts.Length != 2)
+
+                if (argumentParts.Length != 2 || 
+                    argumentParts[0].Length == 0 || 
+                    argumentParts[1].Length == 0)
                 {
                     throw new ArgumentException("Improperly formed argument: " + argument);
                 }
@@ -23,7 +26,7 @@ namespace Savescum
             }
         }
 
-        internal string GetString(string name, string defaultValue)
+        public string GetString(string name, string defaultValue)
         {
             if (!argumentMap.TryGetValue(name, out string value))
             {
@@ -41,7 +44,7 @@ namespace Savescum
             return value;
         }
 
-        internal int GetInteger(string name, string defaultValue)
+        public int GetInteger(string name, string defaultValue)
         {
             string valueString = GetString(name, defaultValue);
             return Int32.Parse(valueString);
