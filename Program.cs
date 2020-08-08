@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
 using System.IO;
+using System.Reflection.Metadata;
 
 namespace Savescum
 {
@@ -66,19 +65,26 @@ namespace Savescum
             {
                 s_argumentProperties = new ArgumentProperties(args, ARGUMENT_SEPARATOR);
             }
-
             catch (ArgumentException e)
             {
-                PrintArgumentException(e);
-                Environment.Exit(1);
+                HandleArgumentException(e);
             }
 
-            // required arguments give no defaults
-            string operation = s_argumentProperties.GetString(ARGUMENT_OPERATION, null);
-            s_pathGame = s_argumentProperties.GetString(ARGUMENT_PATH_GAME, null);
-            s_pathBackup = s_argumentProperties.GetString(ARGUMENT_PATH_BACKUP, null);
+            string operation = "";
+            try
+            {
+                // required arguments give no defaults
+                operation = s_argumentProperties.GetString(ARGUMENT_OPERATION, null);
+                s_pathGame = s_argumentProperties.GetString(ARGUMENT_PATH_GAME, null);
+                s_pathBackup = s_argumentProperties.GetString(ARGUMENT_PATH_BACKUP, null);
 
-            s_prefixBackup = s_argumentProperties.GetString(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
+                // optional arguments *should* never throw when default is supplied 
+                s_prefixBackup = s_argumentProperties.GetString(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
+            }
+            catch (ArgumentException e)
+            {
+                HandleArgumentException(e);
+            }
 
             switch (operation)
             {
@@ -270,6 +276,13 @@ namespace Savescum
             }
         }
 
+        private static void HandleArgumentException(ArgumentException e)
+        {
+            PrintArgumentException(e);
+            PrintUsage();
+            Environment.Exit(1);
+        }
+
         private static void PrintStartBanner()
         {
             Console.WriteLine();
@@ -293,13 +306,6 @@ namespace Savescum
             Console.WriteLine("    Copy finished");
         }
 
-        private static void PrintArgumentRequired(string argument)
-        {
-            Console.Error.WriteLine("Error:");
-            Console.Error.WriteLine("  Required argument not found: " + argument);
-            Console.Error.WriteLine();
-        }
-
         static void PrintUsage()
         {
             Console.WriteLine("Usage: Savescum operation=[save|load|clean|clear] [argument=value ...]");
@@ -308,7 +314,7 @@ namespace Savescum
 
         private static void PrintArgumentException(ArgumentException e)
         {
-            Console.Error.WriteLine("Error processing arguments: ");
+            Console.Error.WriteLine("Error: ");
             Console.Error.WriteLine("  " + e.Message);
             Console.Error.WriteLine();
         }

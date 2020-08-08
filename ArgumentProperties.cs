@@ -16,7 +16,7 @@ namespace Savescum
                 String[] argumentParts = argument.Split(separator);
                 if (argumentParts.Length != 2)
                 {
-                    throw new ArgumentException("Improperly formed argument: [" + argument + "]");
+                    throw new ArgumentException("Improperly formed argument: " + argument);
                 }
 
                 argumentMap.Add(argumentParts[0], argumentParts[1]);
@@ -34,7 +34,7 @@ namespace Savescum
 
                 else
                 {
-                    throw new ArgumentException("Required argument missing: " + name);
+                    throw new ArgumentException("Required argument not found: " + name);
                 }
             }
 
