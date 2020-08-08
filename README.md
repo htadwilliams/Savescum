@@ -56,6 +56,18 @@ count=1
 
 Used differently for different operations, namely load and clean. See operations for use.
 
+### Examples
+
+Recently used for Ark Survival:
+
+#### load
+
+Savescum operation=save gamePath=G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\SavedArksLocal backupPath=G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\BackupArksLocal backupPrefix=BackupArk
+
+#### save
+
+Savescum operation=load gamePath=G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\SavedArksLocal backupPath=G:\games\steam\steamapps\common\ARK\ShooterGame\Saved\BackupArksLocal backupPrefix=BackupArk protectPrefix=OverwrittenArk
+
 ## TODO
 
 Add Command-line options to:
