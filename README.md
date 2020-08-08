@@ -7,23 +7,60 @@ Written initially for Steam install of Ark Survival. Works with bare minimal fun
 
 Command-line interface.
 
-Savescum [load | save>]
+Savescum operation=value setting=value ...
 
-### Save
+### Required settings for all operations
 
-* Copies entire save directory into archive directory with appended 00n suffix.
+#### gamePath
 
-### Load
+gamePath=<full path to game's save directory>
+gamePath=d:\games\SomeGame\SavedGames
 
-* Backs up game's current save directory before restoring into it. Backup is named with date / time suffix.
-* Deletes game's current save directory.
-* Finds largest 00n suffix archive and uses it to replace the save directory that was just backed up and deleted.
+#### backupPath
+
+backupPath=<full path to directory containing save backups>
+gamePath=d:\games\SomeGame\SavedGamesBackup
+ 
+Directory will be created by save operations if it doesn't exist.
+
+#### operation
+
+operation=<save|load|quickload|clean|clear> 
+
+Some operations may have additional required settings.
+
+##### save
+
+Copies entire gamePath directory into backupPath directory, named with optionally specified prefixBackup and appended 00n suffix e.g. PrefixSavedGames001
+
+##### load
+
+* Backs up gamePath directory before restoring into it. Backup is named with date / time suffix.
+* Deletes gamePath directory.
+* Finds largest 00n suffix backup and uses it to replace directory that was just backed up and deleted.
+
+### Optional settings
+
+#### backupPrefix
+
+backupPrefix=<valid filename string>
+backupPrefix=SomegameBackupSaves
+
+Must not contain characters that are invalid for file paths for the given platform, such as ? or *.
+
+#### count
+
+count=number
+count=12
+count=1
+
+Used differently for different operations, namely load and clean. See operations for use.
 
 ## TODO
 
 Add Command-line options to:
 
- - [ ] Set source file / directory for saves.
+ - [X] Set source file / directory for saves.
  - [ ] Load: Add command-line option to specify which save by ordinal.
  - [ ] Maintenance. Option to clean all but N saved entries, with flag for recycle vs. hard delete.
  - [ ] GUI, with presets for various games and installation platforms?
