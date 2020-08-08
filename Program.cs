@@ -8,8 +8,9 @@ namespace Savescum
     class Program
     {
         private const string ARGUMENT_SEPARATOR = "=";
-        private const string OPERATION_SAVE = "save";
+        private const string OPERATION_SAVE = "save" ;
         private const string OPERATION_LOAD = "load";
+        private const string OPERATION_QUICKLOAD = "quickload";
         private const string OPERATION_CLEAN = "clean";
         private const string OPERATION_CLEAR = "clear";
 
@@ -29,8 +30,9 @@ namespace Savescum
         private const string ARGUMENT_PREFIX_BACKUP = "backupPrefix";
         private const string ARGUMENT_PREFIX_PROTECT = "protectPrefix";
 
-        private static readonly int MAX_NAME_COUNT = Int32.MaxValue;
-        private static Dictionary<string, string> s_argumentProperties;
+        private static readonly int MAX_NAME_COUNT = 999;
+
+        private static ArgumentProperties s_argumentProperties;
 
         // These are required so no default set
         private static string s_pathGame;
@@ -62,7 +64,7 @@ namespace Savescum
 
             try
             {
-                s_argumentProperties = GetArgumentProperties(args);
+                s_argumentProperties = new ArgumentProperties(args, ARGUMENT_SEPARATOR);
             }
 
             catch (ArgumentException e)
@@ -71,19 +73,12 @@ namespace Savescum
                 Environment.Exit(1);
             }
 
-            s_prefixBackup = GetPropertyValue(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
-            s_prefixProtect = GetPropertyValue(ARGUMENT_PREFIX_PROTECT, PREFIX_PROTECT);
+            // required arguments give no defaults
+            string operation = s_argumentProperties.GetString(ARGUMENT_OPERATION, null);
+            s_pathGame = s_argumentProperties.GetString(ARGUMENT_PATH_GAME, null);
+            s_pathBackup = s_argumentProperties.GetString(ARGUMENT_PATH_BACKUP, null);
 
-            s_pathGame = GetPropertyValue(ARGUMENT_PATH_GAME, null);
-            s_pathBackup = GetPropertyValue(ARGUMENT_PATH_BACKUP, null);
-            s_pathProtect = GetPropertyValue(ARGUMENT_PATH_PROTECT, s_pathBackup);
-
-            if (!s_argumentProperties.TryGetValue(ARGUMENT_OPERATION, out string operation))
-            {
-                PrintArgumentRequired(ARGUMENT_OPERATION);
-                PrintUsage();
-                Environment.Exit(1);
-            }
+            s_prefixBackup = s_argumentProperties.GetString(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
 
             switch (operation)
             {
@@ -95,6 +90,11 @@ namespace Savescum
                     DoLoad();
                     break;
 
+                case OPERATION_CLEAN:
+                case OPERATION_CLEAR:
+                case OPERATION_QUICKLOAD:
+                    throw new NotImplementedException();
+
                 default:
                     Console.WriteLine("Unknown operation: " + args[0]);
                     PrintUsage();
@@ -103,41 +103,6 @@ namespace Savescum
             }
 
             Environment.Exit(0);
-        }
-
-        private static string GetPropertyValue(string key, string defaultValue)
-        {
-            if (s_argumentProperties.TryGetValue(key, out string value))
-            {
-                return value;
-            }
-
-            // argument not found - null default indicates required value
-            if (null == defaultValue)
-            {
-                PrintArgumentRequired(key);
-                Environment.Exit(1);
-            }
-
-            return defaultValue;
-        }
-
-        private static Dictionary<string, string> GetArgumentProperties(string[] args)
-        {
-            Dictionary<string, string> argumentProperties = new Dictionary<string, string>(args.Length);
-
-            foreach (string argument in args)
-            {
-                String[] argumentParts = argument.Split(ARGUMENT_SEPARATOR);
-                if (argumentParts.Length != 2)
-                {
-                    throw new ArgumentException("Improperly formed argument: [" + argument + "]");
-                }
-
-                argumentProperties.Add(argumentParts[0], argumentParts[1]);
-            }
-
-            return argumentProperties;
         }
 
         private static void DoSave()
@@ -162,6 +127,10 @@ namespace Savescum
 
         private static void DoLoad()
         {
+            // read optional parameters used only by load operation
+            s_prefixProtect = s_argumentProperties.GetString(ARGUMENT_PREFIX_PROTECT, PREFIX_PROTECT);
+            s_pathProtect = s_argumentProperties.GetString(ARGUMENT_PATH_PROTECT, s_pathBackup);
+
             Console.WriteLine("Savescum LOADING...");
 
             // Find latest save - notify and bail out if it isn't found
@@ -215,6 +184,7 @@ namespace Savescum
             // default to empty if unfound
             string lastFoundPath = "";
 
+            // TODO find latest by date not ordinal
             for (int nameCount = 0; nameCount < MAX_NAME_COUNT; nameCount++)
             {
                 string checkPath = String.Format(FORMAT_SAVE, pathSaves, prefixSave, nameCount);
