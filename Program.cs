@@ -1,15 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
 using System.IO;
+using System.Reflection.Metadata;
 
 namespace Savescum
 {
     class Program
     {
         private const string ARGUMENT_SEPARATOR = "=";
-        private const string OPERATION_SAVE = "save";
+        private const string OPERATION_SAVE = "save" ;
         private const string OPERATION_LOAD = "load";
+        private const string OPERATION_QUICKLOAD = "quickload";
+        private const string OPERATION_CLEAN = "clean";
+        private const string OPERATION_CLEAR = "clear";
 
         private const string PREFIX_BACKUP  = "SavescumBackup";
         private const string PREFIX_PROTECT = "SavescumOverwriteProtection";
@@ -19,11 +21,6 @@ namespace Savescum
 
         private const string ARGUMENT_OPERATION = "operation";
 
-        private const string ARGUMENT_OPERATION_CLEAN = "clean";
-        private const string ARGUMENT_OPERATION_CLEAR = "clear";
-        private const string ARGUMENT_OPERATION_SAVE = "save";
-        private const string ARGUMENT_OPERATION_LOAD = "load";
-
         private const string ARGUMENT_PATH_GAME = "gamePath";
         private const string ARGUMENT_PATH_BACKUP = "backupPath";
         private const string ARGUMENT_PATH_PROTECT = "protectPath";
@@ -32,8 +29,9 @@ namespace Savescum
         private const string ARGUMENT_PREFIX_BACKUP = "backupPrefix";
         private const string ARGUMENT_PREFIX_PROTECT = "protectPrefix";
 
-        private static readonly int MAX_NAME_COUNT = Int32.MaxValue;
-        private static Dictionary<string, string> s_argumentProperties;
+        private static readonly int MAX_NAME_COUNT = 999;
+
+        private static ArgumentProperties s_argumentProperties;
 
         // These are required so no default set
         private static string s_pathGame;
@@ -65,27 +63,27 @@ namespace Savescum
 
             try
             {
-                s_argumentProperties = GetArgumentProperties(args);
+                s_argumentProperties = new ArgumentProperties(args, ARGUMENT_SEPARATOR);
             }
-
             catch (ArgumentException e)
             {
-                PrintArgumentException(e);
-                Environment.Exit(1);
+                HandleArgumentException(e);
             }
 
-            s_prefixBackup = GetPropertyValue(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
-            s_prefixProtect = GetPropertyValue(ARGUMENT_PREFIX_PROTECT, PREFIX_PROTECT);
-
-            s_pathGame = GetPropertyValue(ARGUMENT_PATH_GAME, null);
-            s_pathBackup = GetPropertyValue(ARGUMENT_PATH_BACKUP, null);
-            s_pathProtect = GetPropertyValue(ARGUMENT_PATH_PROTECT, s_pathBackup);
-
-            if (!s_argumentProperties.TryGetValue(ARGUMENT_OPERATION, out string operation))
+            string operation = "";
+            try
             {
-                PrintArgumentRequired(ARGUMENT_OPERATION);
-                PrintUsage();
-                Environment.Exit(1);
+                // required arguments give no defaults
+                operation = s_argumentProperties.GetString(ARGUMENT_OPERATION, null);
+                s_pathGame = s_argumentProperties.GetString(ARGUMENT_PATH_GAME, null);
+                s_pathBackup = s_argumentProperties.GetString(ARGUMENT_PATH_BACKUP, null);
+
+                // optional arguments *should* never throw when default is supplied 
+                s_prefixBackup = s_argumentProperties.GetString(ARGUMENT_PREFIX_BACKUP, PREFIX_BACKUP);
+            }
+            catch (ArgumentException e)
+            {
+                HandleArgumentException(e);
             }
 
             switch (operation)
@@ -98,6 +96,11 @@ namespace Savescum
                     DoLoad();
                     break;
 
+                case OPERATION_CLEAN:
+                case OPERATION_CLEAR:
+                case OPERATION_QUICKLOAD:
+                    throw new NotImplementedException();
+
                 default:
                     Console.WriteLine("Unknown operation: " + args[0]);
                     PrintUsage();
@@ -106,41 +109,6 @@ namespace Savescum
             }
 
             Environment.Exit(0);
-        }
-
-        private static string GetPropertyValue(string key, string defaultValue)
-        {
-            if (s_argumentProperties.TryGetValue(key, out string value))
-            {
-                return value;
-            }
-
-            // argument not found - null default indicates required value
-            if (null == defaultValue)
-            {
-                PrintArgumentRequired(key);
-                Environment.Exit(1);
-            }
-
-            return defaultValue;
-        }
-
-        private static Dictionary<string, string> GetArgumentProperties(string[] args)
-        {
-            Dictionary<string, string> argumentProperties = new Dictionary<string, string>(args.Length);
-
-            foreach (string argument in args)
-            {
-                String[] argumentParts = argument.Split(ARGUMENT_SEPARATOR);
-                if (argumentParts.Length != 2)
-                {
-                    throw new ArgumentException("Improperly formed argument: [" + argument + "]");
-                }
-
-                argumentProperties.Add(argumentParts[0], argumentParts[1]);
-            }
-
-            return argumentProperties;
         }
 
         private static void DoSave()
@@ -165,6 +133,10 @@ namespace Savescum
 
         private static void DoLoad()
         {
+            // read optional parameters used only by load operation
+            s_prefixProtect = s_argumentProperties.GetString(ARGUMENT_PREFIX_PROTECT, PREFIX_PROTECT);
+            s_pathProtect = s_argumentProperties.GetString(ARGUMENT_PATH_PROTECT, s_pathBackup);
+
             Console.WriteLine("Savescum LOADING...");
 
             // Find latest save - notify and bail out if it isn't found
@@ -218,6 +190,7 @@ namespace Savescum
             // default to empty if unfound
             string lastFoundPath = "";
 
+            // TODO find latest by date not ordinal
             for (int nameCount = 0; nameCount < MAX_NAME_COUNT; nameCount++)
             {
                 string checkPath = String.Format(FORMAT_SAVE, pathSaves, prefixSave, nameCount);
@@ -303,6 +276,13 @@ namespace Savescum
             }
         }
 
+        private static void HandleArgumentException(ArgumentException e)
+        {
+            PrintArgumentException(e);
+            PrintUsage();
+            Environment.Exit(1);
+        }
+
         private static void PrintStartBanner()
         {
             Console.WriteLine();
@@ -326,13 +306,6 @@ namespace Savescum
             Console.WriteLine("    Copy finished");
         }
 
-        private static void PrintArgumentRequired(string argument)
-        {
-            Console.Error.WriteLine("Error:");
-            Console.Error.WriteLine("  Required argument not found: " + argument);
-            Console.Error.WriteLine();
-        }
-
         static void PrintUsage()
         {
             Console.WriteLine("Usage: Savescum operation=[save|load|clean|clear] [argument=value ...]");
@@ -341,7 +314,7 @@ namespace Savescum
 
         private static void PrintArgumentException(ArgumentException e)
         {
-            Console.Error.WriteLine("Error processing arguments: ");
+            Console.Error.WriteLine("Error: ");
             Console.Error.WriteLine("  " + e.Message);
             Console.Error.WriteLine();
         }
