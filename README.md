@@ -9,6 +9,8 @@ Command-line interface.
 
 Savescum operation=value setting=value ...
 
+Spaces may only be used within quoted (TODO verify) values. 
+
 ### Required settings for all operations
 
 #### gamePath
