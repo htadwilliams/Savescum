@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -140,11 +141,11 @@ namespace Savescum
             Console.WriteLine("Savescum LOADING...");
 
             // Find latest save - notify and bail out if it isn't found
-            string lastSavePath = FindLastSavePath(s_pathBackup, s_prefixBackup);
-            if (lastSavePath.Length == 0)
+            string latestBackupPath = FindLatestBackupPath(s_pathBackup, s_prefixBackup);
+            if (latestBackupPath.Length == 0)
             {
                 Console.Error.WriteLine();
-                Console.Error.WriteLine("  Error: No saves found at ");
+                Console.Error.WriteLine("  Error: No backup saves found at ");
                 Console.Error.WriteLine("      path: " + s_pathBackup);
                 Console.Error.WriteLine("    prefix: " + s_prefixBackup);
                 Console.Error.WriteLine();
@@ -155,7 +156,7 @@ namespace Savescum
             }
 
             Console.WriteLine("  Found latest backup at");
-            Console.WriteLine("      path: " + lastSavePath);
+            Console.WriteLine("      path: " + latestBackupPath);
 
             // Backup existing save directory before writing over it
             string protectDirPath = GenerateProtectPath(s_pathProtect, s_prefixProtect);
@@ -177,33 +178,33 @@ namespace Savescum
 
             Console.WriteLine("  Restoring deleted directory from backup save");
 
-            PrintCopyInfo(lastSavePath, s_pathGame);
-            DirectoryCopy(lastSavePath, s_pathGame, true);
+            PrintCopyInfo(latestBackupPath, s_pathGame);
+            DirectoryCopy(latestBackupPath, s_pathGame, true);
 
             Console.WriteLine();
-            Console.WriteLine("LOAD FINISHED from " + lastSavePath);
+            Console.WriteLine("LOAD FINISHED from " + latestBackupPath);
             Console.WriteLine();
         }
 
-        private static string FindLastSavePath(string pathSaves, string prefixSave)
+        private static string FindLatestBackupPath(string pathBackups, string prefixBackup)
         {
             // default to empty if unfound
-            string lastFoundPath = "";
+            string latestFoundPath = "";
 
             // TODO find latest by date not ordinal
             for (int nameCount = 0; nameCount < MAX_NAME_COUNT; nameCount++)
             {
-                string checkPath = String.Format(FORMAT_SAVE, pathSaves, prefixSave, nameCount);
+                string checkPath = String.Format(FORMAT_SAVE, pathBackups, prefixBackup, nameCount);
                 DirectoryInfo dir = new DirectoryInfo(checkPath);
                 if (!dir.Exists)
                 {
                     break;
                 }
 
-                lastFoundPath = checkPath;
+                latestFoundPath = checkPath;
             }
 
-            return lastFoundPath;
+            return latestFoundPath;
         }
 
         private static string GenerateSavePath(string path, string prefix)
