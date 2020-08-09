@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
 
 namespace Savescum
 {
@@ -11,9 +10,6 @@ namespace Savescum
         private const string ARGUMENT_SEPARATOR = "=";
         private const string OPERATION_SAVE = "save" ;
         private const string OPERATION_LOAD = "load";
-        private const string OPERATION_QUICKLOAD = "quickload";
-        private const string OPERATION_CLEAN = "clean";
-        private const string OPERATION_CLEAR = "clear";
 
         private const string PREFIX_BACKUP  = "SavescumBackup";
         private const string PREFIX_PROTECT = "SavescumOverwriteProtection";
@@ -26,7 +22,6 @@ namespace Savescum
         private const string ARGUMENT_PATH_GAME = "gamePath";
         private const string ARGUMENT_PATH_BACKUP = "backupPath";
         private const string ARGUMENT_PATH_PROTECT = "protectPath";
-        private const string ARGUMENT_COUNT = "count";
 
         private const string ARGUMENT_PREFIX_BACKUP = "backupPrefix";
         private const string ARGUMENT_PREFIX_PROTECT = "protectPrefix";
@@ -41,16 +36,8 @@ namespace Savescum
         private static string s_pathProtect;
 
         // Set argument defaults
-        private static int s_argumentCount = 1;
         private static string s_prefixBackup = PREFIX_BACKUP;
         private static string s_prefixProtect = PREFIX_PROTECT;
-
-        // Command-lines for testing
-        //
-        // operation=save 
-        // operation=save gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup
-        // gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup
-        // operation=save gamePath=g:\source\git\Savescum backupPath=g:\source\git\SavescumBackup blah=blah=blah
 
         static void Main(string[] args)
         {
@@ -98,11 +85,6 @@ namespace Savescum
                     DoLoad();
                     break;
 
-                case OPERATION_CLEAN:
-                case OPERATION_CLEAR:
-                case OPERATION_QUICKLOAD:
-                    throw new NotImplementedException();
-
                 default:
                     Console.WriteLine("Unknown operation: " + args[0]);
                     PrintUsage();
@@ -121,7 +103,10 @@ namespace Savescum
 
             if (savePath.Length == 0)
             {
-                Console.WriteLine("Error: Couldn't generate save path");
+                Console.Error.WriteLine("Error: Couldn't find un-used save name. ");
+                Console.Error.WriteLine("  Exceeded maximum number of saves (" + MAX_NAME_COUNT + ").");
+                Console.Error.WriteLine("  Delete some from: " + s_pathBackup);
+
                 return;
             }
 
