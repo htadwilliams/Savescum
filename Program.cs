@@ -26,7 +26,7 @@ namespace Savescum
         private const string ARGUMENT_PREFIX_BACKUP = "backupPrefix";
         private const string ARGUMENT_PREFIX_PROTECT = "protectPrefix";
 
-        private static readonly int MAX_NAME_COUNT = 5;
+        private static readonly int MAX_NAME_COUNT = 999;
 
         private static ArgumentProperties s_argumentProperties;
 
