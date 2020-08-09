@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 
 namespace Savescum
@@ -186,25 +187,27 @@ namespace Savescum
             Console.WriteLine();
         }
 
-        private static string FindLatestBackupPath(string pathBackups, string prefixBackup)
+        private static string FindLatestBackupPath(string pathBackup, string prefixBackup)
         {
-            // default to empty if unfound
-            string latestFoundPath = "";
+            DirectoryInfo backupDirectoryInfo = new DirectoryInfo(pathBackup);
 
-            // TODO find latest by date not ordinal
-            for (int nameCount = 0; nameCount < MAX_NAME_COUNT; nameCount++)
+            List<DirectoryInfo> directoryInfos = new List<DirectoryInfo>(
+                backupDirectoryInfo.GetDirectories(
+                    prefixBackup + "*.*"));
+
+            // nothing found
+            if (directoryInfos.Count == 0)
             {
-                string checkPath = String.Format(FORMAT_SAVE, pathBackups, prefixBackup, nameCount);
-                DirectoryInfo dir = new DirectoryInfo(checkPath);
-                if (!dir.Exists)
-                {
-                    break;
-                }
-
-                latestFoundPath = checkPath;
+                return "";
             }
 
-            return latestFoundPath;
+            // sort results to find latest by creation time
+            IOrderedEnumerable<DirectoryInfo> orderedInfos = directoryInfos.OrderBy(
+                directoryInfo =>
+                    directoryInfo.CreationTime);
+
+            // newest will be last in the list
+            return orderedInfos.Last().FullName;
         }
 
         private static string GenerateSavePath(string path, string prefix)
